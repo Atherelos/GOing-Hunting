@@ -1,20 +1,6 @@
-#!/bin/bash
-#
+#!/bin/bash	
 #Disclaimer, this is a work in progress! 
-#
 #Addtionally, with a large target the wayback data can get pretty large. Tested against a company operating a bug bounty program and it got up to about 16gb. 
-#
-#A few dependencies are needed to run this tool. 
-#
-#1.) GO should be installed (Guide to installing GO on Kali "https://tzusec.com/how-to-install-golang-in-kali-linux/") 
-#
-#2.) Tool list 
-#	1.) Assetfinder -- "https://github.com/tomnomnom/assetfinder"
-#	2.) Httprobe -- "https://github.com/tomnomnom/assetfinder"
-#	3.) Waybackurls -- "https://github.com/tomnomnom/assetfinder"
-#	4.) Subjack -- "https://github.com/haccer/subjack"
-#	5.) Nmap (should be installed if running from Kali, if not) -- "https://nmap.org/download.html"
-#	6.) GoWitness -- "https://github.com/sensepost/gowitness"
 
 echo "[+] Script Started"
 date 
@@ -123,25 +109,28 @@ rm $url/recon/httprobe/a.txt
 
 if [ -f "$scopeFile" ];then 
 	echo "[+] Creating comparison file..."
-	for line in $(cat $url/recon/httprobe/alive.txt );do 
-	nslookup $line |tail -n +3 |sed -n "s/Address:/$line :/p" >> $url/recon/httprobe/assetsToBeChecked.txt; done 
+	for line in $(cat $url/recon/httprobe/alive.txt );do nslookup $line |tail -n +3 |sed -n "s/Address:/$line :/p" >> $url/recon/httprobe/assetsToBeChecked.txt; done 
 	echo "[+} Outputting itmes in scope..."
 fi
 
+
+if [ -f "$scopeFile" ]; then
 
 	mapfile -t scopeArray < "$2"
 
 	while read -r col1 col2 col3; do 
 		for item in "${!scopeArray[@]}"; do 
 			if [[ $col3 == "${scopeArray[item]}" ]]; then 
-				echo "[+] $col1 $col2 $col3 is in scope!" |tee $url/recon/inScope.txt
+				echo "[+] $col1 $col2 $col3 is in scope!" |tee $url/recon/inScope.txt 
+				echo "[+] $col3 added to nmap file ... " 
+				echo "$col3" >>  $url/recon/tonmap.txt
 			fi
 		done 
-	done < "$url/recon/assetsToBeChecked.txt"
-	cat $url/recon/inScope.txt | awk '{print $3}' > $url/recon/toNmap.txt
-else
-	echo "[-] No scope supplied, skipping scope check..."
-fi
+	done < "$url/recon/httprobe/assetsToBeChecked.txt"
+
+	sort $url/recon/tonmap.txt |uniq  > $url/recon/toNmap.txt
+	rm  $url/recon/tonmap.txt
+fi 
 
 if [ -f "$scopeFile" ]; then
 
